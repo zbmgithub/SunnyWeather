@@ -1,6 +1,7 @@
 package com.sunnyweather.android.ui.place;
 
 import android.app.Application;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -24,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.sunnyweather.android.R;
 import com.sunnyweather.android.SunnyWeatherApplication;
 import com.sunnyweather.android.logic.model.Place;
+import com.sunnyweather.android.ui.weather.WeatherActivity;
 
 import java.util.List;
 
@@ -42,6 +44,17 @@ public class PlaceFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        if (viewModel.isPlaceSaved()) {
+            Place place = viewModel.getSavedPlace();
+            Intent intent = new Intent(getContext(), WeatherActivity.class)
+                    .putExtra("location_lng", place.getLocation().getLng())
+                    .putExtra("location_lat", place.getLocation().getLat())
+                    .putExtra("place_name", place.getName());
+
+            startActivity(intent);
+            getActivity().finish();
+            return;
+        }
         LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
         RecyclerView recyclerView = getActivity().findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(layoutManager);
@@ -52,6 +65,7 @@ public class PlaceFragment extends Fragment {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
+
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 //Log.d("Tag","textChanged");

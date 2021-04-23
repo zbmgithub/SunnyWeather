@@ -4,6 +4,11 @@ public class Location {
     private String lng;//经度
     private String lat;//维度
 
+    public Location(String lng, String lat) {
+        this.lng = lng;
+        this.lat = lat;
+    }
+
     public String getLng() {
         return lng;
     }
