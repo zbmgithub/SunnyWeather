@@ -14,9 +14,9 @@ import com.sunnyweather.android.logic.model.Weather;
 
 public class WeatherViewModel extends ViewModel {
     MutableLiveData<Location> locationLiveData = new MutableLiveData<>();
-    String locationLng = "";
-    String locationLat = "";
-    String placeName = "";
+    public String locationLng = "";
+    public String locationLat = "";
+    public String placeName = "";
 
     MutableLiveData<Weather> weatherLiveData = (MutableLiveData<Weather>) Transformations.switchMap(locationLiveData, location -> {
         return Repository.refreshWeatehr(location.getLng(), location.getLat());

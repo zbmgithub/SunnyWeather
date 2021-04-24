@@ -1,15 +1,22 @@
 package com.sunnyweather.android.ui.weather;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.viewpager.widget.ViewPager;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -27,8 +34,11 @@ import com.sunnyweather.android.ui.place.PlaceViewModel;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
+import static java.lang.Thread.sleep;
+
 public class WeatherActivity extends AppCompatActivity {
-    WeatherViewModel viewModel;
+    public WeatherViewModel viewModel;
+    SwipeRefreshLayout swipeRefresh;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,25 +46,18 @@ public class WeatherActivity extends AppCompatActivity {
         //设置状态栏透明
         View decorView = getWindow().getDecorView();
         decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-//        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
 
-
         setContentView(R.layout.activity_weather);
+
         Sky.initSky();
+        swipeRefresh = (SwipeRefreshLayout) WeatherActivity.this.findViewById(R.id.swipeRefresh);
+
         viewModel = new ViewModelProvider(this).get(WeatherViewModel.class);
-        if (viewModel.locationLng.isEmpty()) {
-            viewModel.locationLng = getIntent().getStringExtra("location_lng");
-            //Log.d("Tag","lng OK"+viewModel.locationLng);
-        }
-        if (viewModel.locationLat.isEmpty()) {
-            viewModel.locationLat = getIntent().getStringExtra("location_lat");
-            //Log.d("Tag","lat OK"+viewModel.locationLat);
-        }
-        if (viewModel.placeName.isEmpty()) {
-            viewModel.placeName = getIntent().getStringExtra("place_name");
-            //Log.d("Tag","name OK"+viewModel.placeName);
-        }
+        viewModel.locationLng = getIntent().getStringExtra("location_lng");
+        viewModel.locationLat = getIntent().getStringExtra("location_lat");
+        viewModel.placeName = getIntent().getStringExtra("place_name");
+
         viewModel.weatherLiveData.observe(this, new Observer<Weather>() {
             @Override
             public void onChanged(Weather weather) {
@@ -62,10 +65,57 @@ public class WeatherActivity extends AppCompatActivity {
                     showWeatherInfo(weather);
                 } else if (weather.getRealtime() == null && weather.getDaily() == null) {
                     Toast.makeText(WeatherActivity.this, "无法成功获取天气信息", Toast.LENGTH_SHORT).show();
+                } else {
+                    //由于SunnyWeatherNetwo类中数据两个线程不同步，返回数据时weather的属性可能一个是空的，一个是正常，此时不能正常显示界面，待解决
+                    Toast.makeText(WeatherActivity.this, "下拉获取最新数据", Toast.LENGTH_SHORT).show();
                 }
+                //请求结束后，刷新事件结束
+                swipeRefresh.setRefreshing(false);
             }
         });
+        swipeRefresh.setColorSchemeResources(R.color.purple_500);
+        refreshWeather();
+        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                refreshWeather();
+            }
+        });
+
+        //设置滑动菜单
+        DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
+        Button navBtn = (Button) findViewById(R.id.navBtn);
+        navBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawerLayout.openDrawer(GravityCompat.START);//打开滑动菜单
+            }
+        });
+        drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
+            }
+
+            @Override
+            public void onDrawerOpened(@NonNull View drawerView) {
+            }
+
+            @Override
+            public void onDrawerClosed(@NonNull View drawerView) {
+                InputMethodManager manager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                manager.hideSoftInputFromWindow(drawerView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+                //隐藏输入法
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+            }
+        });
+    }
+
+    public void refreshWeather() {
         viewModel.refreshWeather(viewModel.locationLng, viewModel.locationLat);
+        swipeRefresh.setRefreshing(true);
     }
 
     private void showWeatherInfo(Weather weather) {

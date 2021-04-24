@@ -30,7 +30,6 @@ public class Repository {
         MutableLiveData<Weather> weatherLiveData = new MutableLiveData<>();
         SunnyWeatherNetwork.getRealtimeWeather(lng, lat, weatherLiveData);
         SunnyWeatherNetwork.getDailyWeather(lng, lat, weatherLiveData);
-
         return weatherLiveData;
     }
 
